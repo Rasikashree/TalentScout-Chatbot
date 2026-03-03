@@ -11,10 +11,14 @@ import json
 # LLM Integration - Use LangChain for flexibility
 try:
     from langchain_openai import ChatOpenAI
-    from langchain.schema import HumanMessage, SystemMessage, AIMessage
+    from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 except ImportError:
-    from langchain.chat_models import ChatOpenAI
-    from langchain.schema import HumanMessage, SystemMessage, AIMessage
+    try:
+        from langchain.chat_models import ChatOpenAI
+        from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+    except ImportError:
+        from langchain.chat_models import ChatOpenAI
+        from langchain.schema import HumanMessage, SystemMessage, AIMessage
 
 from config import (
     LLM_API_KEY,
@@ -60,6 +64,8 @@ class TalentScoutChatbot:
         """
         self.api_key = api_key or LLM_API_KEY
         self.model = model
+        self.llm_available = True
+        self.last_llm_error: Optional[str] = None
 
         # Initialize LLM
         if not self.api_key:
@@ -93,6 +99,86 @@ class TalentScoutChatbot:
         self.current_question_index = 0
         self.conversation_stage = "greeting"  # greeting, information, questions, completed
 
+    def _safe_invoke(self, messages: List[Any]) -> Optional[str]:
+        """Invoke LLM safely and return None if the provider is unavailable."""
+        try:
+            response = self.llm.invoke(messages)
+            self.llm_available = True
+            self.last_llm_error = None
+            return response.content
+        except Exception as exc:
+            self.llm_available = False
+            self.last_llm_error = str(exc)
+            return None
+
+    def _fallback_greeting(self) -> str:
+        """Deterministic greeting when LLM is unavailable."""
+        return (
+            "Hello! Welcome to TalentScout 👋\n\n"
+            "I’ll guide you through a short screening process. "
+            "First, please share your **full name** (first and last name)."
+        )
+
+    def _fallback_clarification(self, field: str) -> str:
+        """Fallback clarification prompts by field."""
+        prompts = {
+            "full_name": "Please provide your full name (first and last name).",
+            "email": "Please provide a valid email address (example: name@example.com).",
+            "phone": "Please provide a valid phone number with country code if possible.",
+            "experience_years": "Please enter your years of experience as a number (for example: 3 or 5.5).",
+            "desired_position": "Please share the role you are applying for (at least 3 characters).",
+            "location": "Please share your current city and country.",
+            "tech_stack": "Please list your core technologies (for example: Python, Django, PostgreSQL).",
+        }
+        return prompts.get(field, f"Please provide your {field.replace('_', ' ')}.")
+
+    def _fallback_technical_questions(self) -> List[str]:
+        """Generate deterministic technical questions when LLM is unavailable."""
+        tech_stack = self.candidate_info.get("tech_stack", [])
+        experience = self.candidate_info.get("experience_years", 0)
+
+        base_questions = [
+            "Describe a recent technical project you worked on and your specific contributions.",
+            "How do you approach debugging when a production issue is reported?",
+            "What practices do you use to write maintainable and testable code?",
+        ]
+
+        stack_questions = []
+        for tech in tech_stack[:3]:
+            stack_questions.append(
+                f"In {tech}, what are the most important best practices you follow in real projects?"
+            )
+
+        if experience >= 5:
+            base_questions.append(
+                "How do you design scalable systems and mentor junior engineers in your team?"
+            )
+        elif experience <= 1:
+            base_questions.append(
+                "How do you learn a new technology quickly when assigned an unfamiliar task?"
+            )
+
+        questions = stack_questions + base_questions
+        return questions[:5]
+
+    def _fallback_ending(self) -> str:
+        """Deterministic ending when LLM is unavailable."""
+        name = self.candidate_info.get("full_name", "Candidate")
+        return (
+            f"Thank you, {name}! Your interview responses have been recorded. ✅\n\n"
+            "We’ve captured your profile details and technical answers. "
+            "Our recruitment team will review your application and reach out within **5-7 business days** with next steps."
+        )
+
+    def _fallback_redirect(self) -> str:
+        """Fallback redirect when input is unclear."""
+        if self.conversation_stage == "information" and self.current_field_index < len(self.required_fields):
+            field = self.required_fields[self.current_field_index]
+            return self._get_next_information_request(field)
+        if self.conversation_stage == "questions":
+            return self._get_next_technical_question()
+        return "Could you please share a bit more detail so I can help you better?"
+
     def start_conversation(self) -> str:
         """Start the chatbot conversation with a greeting."""
         greeting_message = GREETING_PROMPT.format(company_name="TalentScout")
@@ -103,8 +189,7 @@ class TalentScoutChatbot:
             HumanMessage(content=greeting_message),
         ]
 
-        response = self.llm.invoke(messages)
-        greeting_response = response.content
+        greeting_response = self._safe_invoke(messages) or self._fallback_greeting()
 
         # Add to conversation history
         self.conversation_history.append({"role": "assistant", "content": greeting_response})
@@ -244,8 +329,8 @@ class TalentScoutChatbot:
             ),
         ]
 
-        response = self.llm.invoke(messages)
-        return response.content
+        response = self._safe_invoke(messages)
+        return response or self._fallback_clarification(field)
 
     def _generate_technical_questions(self) -> List[str]:
         """Generate technical questions based on candidate's tech stack."""
@@ -253,8 +338,6 @@ class TalentScoutChatbot:
         experience = self.candidate_info.get("experience_years", 0)
         position = self.candidate_info.get("desired_position", "")
         name = self.candidate_info.get("full_name", "")
-
-        difficulty = get_difficulty_level_for_questions(experience)
 
         prompt = TECH_QUESTION_GENERATION_PROMPT.format(
             name=name,
@@ -270,12 +353,13 @@ class TalentScoutChatbot:
             HumanMessage(content=prompt),
         ]
 
-        response = self.llm.invoke(messages)
-        response_text = response.content
+        response_text = self._safe_invoke(messages)
+        if not response_text:
+            return self._fallback_technical_questions()
 
         # Extract questions from the response
         questions = self._extract_questions(response_text)
-        return questions
+        return questions or self._fallback_technical_questions()
 
     def _extract_questions(self, response_text: str) -> List[str]:
         """Extract questions from LLM response."""
@@ -341,8 +425,7 @@ class TalentScoutChatbot:
             ),
         ]
 
-        response = self.llm.invoke(messages)
-        ending_message = response.content
+        ending_message = self._safe_invoke(messages) or self._fallback_ending()
 
         # Save candidate information
         if self.candidate_info:
@@ -370,8 +453,8 @@ class TalentScoutChatbot:
             ),
         ]
 
-        response = self.llm.invoke(messages)
-        return response.content
+        response = self._safe_invoke(messages)
+        return response or self._fallback_redirect()
 
     def get_progress(self) -> Dict[str, Any]:
         """Get current conversation progress."""
