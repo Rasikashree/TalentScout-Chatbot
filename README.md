@@ -138,7 +138,21 @@ To gracefully end the conversation, type any of these:
 - "quit"
 - "thank you"
 
-## 🔧 Technical Specifications
+## � Screenshots
+
+![Screenshot 1](images/Screenshot%20(103).png)
+![Screenshot 2](images/Screenshot%20(104).png)
+![Screenshot 3](images/Screenshot%20(105).png)
+![Screenshot 4](images/Screenshot%20(106).png)
+![Screenshot 5](images/Screenshot%20(107).png)
+![Screenshot 6](images/Screenshot%20(108).png)
+![Screenshot 7](images/Screenshot%20(109).png)
+![Screenshot 8](images/Screenshot%20(110).png)
+![Screenshot 9](images/Screenshot%20(111).png)
+![Screenshot 10](images/Screenshot%20(112).png)
+![Screenshot 11](images/Screenshot%20(113).png)
+
+## �🔧 Technical Specifications
 
 ### Technologies Used
 
