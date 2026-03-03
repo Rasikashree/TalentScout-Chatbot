@@ -138,7 +138,7 @@ To gracefully end the conversation, type any of these:
 - "quit"
 - "thank you"
 
-## � Screenshots
+## Screenshots
 
 ![Screenshot 1](images/Screenshot%20(103).png)
 ![Screenshot 2](images/Screenshot%20(104).png)
@@ -152,7 +152,7 @@ To gracefully end the conversation, type any of these:
 ![Screenshot 10](images/Screenshot%20(112).png)
 ![Screenshot 11](images/Screenshot%20(113).png)
 
-## �🔧 Technical Specifications
+## 🔧 Technical Specifications
 
 ### Technologies Used
 
