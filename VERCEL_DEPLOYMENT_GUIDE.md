@@ -60,7 +60,7 @@ vercel --prod
 3. Go to "Settings" → "Environment Variables"
 4. Add:
    ```
-   OPENAI_API_KEY=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
+   OPENAI_API_KEY=sk-proj-your_actual_api_key_here
    LLM_MODEL=gpt-3.5-turbo
    ```
 5. Save and redeploy
@@ -94,7 +94,7 @@ Before deploying:
 1. Click "Environment Variables"
 2. Add:
    ```
-   OPENAI_API_KEY=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
+   OPENAI_API_KEY=sk-proj-your_actual_api_key_here
    LLM_MODEL=gpt-3.5-turbo
    ```
 3. Click "Deploy"
@@ -143,7 +143,7 @@ Before clicking "Deploy":
 2. Add the following:
    ```
    Key: OPENAI_API_KEY
-   Value: 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
+   Value: sk-proj-your_actual_api_key_here
    ```
    
    ```

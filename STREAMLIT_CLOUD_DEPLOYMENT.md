@@ -70,7 +70,7 @@ Your `.env` is already in `.gitignore`, so secrets are NOT in GitHub. You need t
 4. Paste this exactly:
 
 ```
-OPENAI_API_KEY=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
+OPENAI_API_KEY=sk-proj-your_actual_api_key_here
 LLM_MODEL=gpt-3.5-turbo
 ```
 
