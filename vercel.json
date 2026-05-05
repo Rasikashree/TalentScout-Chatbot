@@ -1,0 +1,16 @@
+{
+  "buildCommand": "pip install -r requirements.txt && pip install streamlit-cloud",
+  "framework": "python",
+  "python": {
+    "version": "3.11"
+  },
+  "env": {
+    "STREAMLIT_SERVER_PORT": "3000",
+    "STREAMLIT_SERVER_ADDRESS": "0.0.0.0",
+    "STREAMLIT_SERVER_HEADLESS": "true",
+    "STREAMLIT_CLIENT_LOGGER_LEVEL": "error",
+    "STREAMLIT_LOGGER_LEVEL": "error"
+  },
+  "regions": ["iad1"],
+  "public": true
+}

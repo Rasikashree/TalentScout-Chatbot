@@ -66,6 +66,21 @@ docker-compose down
 
 ## Cloud Deployment Options
 
+### GitHub Pages (Static Redirect Only)
+
+GitHub Pages cannot run Streamlit servers. It can only host static files.
+
+Use this repo's `index.html` as a landing/redirect page:
+
+1. Deploy the app to Streamlit Community Cloud (or another app host)
+2. Open `index.html`
+3. Replace both occurrences of:
+  - `https://your-streamlit-app-url.streamlit.app`
+4. Commit and push to `main`
+5. Enable GitHub Pages (Source: `Deploy from a branch`, Branch: `main`, Folder: `/root`)
+
+Result: visitors to your `github.io` URL are automatically redirected to the live app.
+
 ### Option 1: Streamlit Cloud (Easiest)
 
 **Benefits:**
